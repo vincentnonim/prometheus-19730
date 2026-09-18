@@ -57,7 +57,11 @@ global:
   [ scrape_interval: <duration> | default = 1m ]
 
   # How long until a scrape request times out.
-  # It cannot be greater than the scrape interval.
+  # It cannot be greater than the scrape interval, and is capped to it.
+  # Note this cap is computed from the scrape_interval of this job (or the
+  # global one), not from a per-target __scrape_interval__ set via service
+  # discovery or relabeling. If you override __scrape_interval__, override
+  # __scrape_timeout__ as well.
   [ scrape_timeout: <duration> | default = 10s ]
 
   # The protocols to negotiate during a scrape with the client.
@@ -168,7 +172,7 @@ global:
   # case, the scrape_native_histograms setting has no effect. If
   # convert_classic_histograms_to_nhcb is false, the histogram is ingested as
   # a classic histograms. If convert_classic_histograms_to_nhcb is true, the
-  # histograms is converted to an NHCB. In this case, 
+  # histograms is converted to an NHCB. In this case,
   # always_scrape_classic_histograms determines whether it is also ingested
   # as a classic histograms or not.
   #
@@ -179,7 +183,7 @@ global:
   # 1, but the resulting classic histogram or NHCB only has a sole bucket, the
   # +Inf bucket. If scrape_native_histograms is true, however, the histogram is
   # recognized as a pure native histogram and ingested as such. There will be
-  # no classic histogram ingested, no matter what 
+  # no classic histogram ingested, no matter what
   # always_scrape_classic_histograms is set to, and there will be no
   # conversion to an NHCB, no matter what convert_classic_histograms_to_nhcb
   # is set to.
@@ -330,7 +334,7 @@ job_name: <job_name>
 # The protocols to negotiate during a scrape with the client.
 # Supported values (case sensitive): PrometheusProto, OpenMetricsText0.0.1,
 # OpenMetricsText1.0.0, PrometheusText0.0.4, PrometheusText1.0.0.
-# If not set in the global config, the default value depends on the 
+# If not set in the global config, the default value depends on the
 # setting of scrape_native_histograms. If false, it is
 # [ OpenMetricsText1.0.0, OpenMetricsText0.0.1, PrometheusText1.0.0, PrometheusText0.0.4 ].
 # If true, it is
@@ -825,7 +829,7 @@ client_id: <string>
 # GrantType is set to "urn:ietf:params:oauth:grant-type:jwt-bearer".
 [ iss: <string> ]
 
-# Intended audience of the request. If empty, the value 
+# Intended audience of the request. If empty, the value
 # of TokenURL is used as the intended audience. Only used if
 # GrantType is set to "urn:ietf:params:oauth:grant-type:jwt-bearer".
 [ audience: <string> ]
@@ -932,7 +936,7 @@ The following meta labels are available on targets during [relabeling](#relabel_
 
 #### `ecs`
 
-The `ecs` role discovers targets from AWS ECS containers. 
+The `ecs` role discovers targets from AWS ECS containers.
 
 ECS service discovery supports all ECS networking modes:
 - **awsvpc mode** (Fargate and EC2 with ENI): Uses the task's private IP address from its elastic network interface
@@ -3584,6 +3588,11 @@ label is set to the value of the first passed URL parameter called `<name>`, as 
 
 The `__scrape_interval__` and `__scrape_timeout__` labels are set to the target's
 interval and timeout, as specified in `scrape_config`.
+The timeout is capped at the job's scrape interval before these labels are set.
+Both labels can be overridden via service discovery or relabeling; overriding
+one without the other is discouraged, as the remaining value still comes from
+the job configuration. A target whose `__scrape_timeout__` is greater than its
+`__scrape_interval__` is dropped.
 
 The `__convert_classic_histograms_to_nhcb__` label is set to the target's
 `convert_classic_histograms_to_nhcb` value, as specified in `scrape_config`
@@ -4050,7 +4059,7 @@ azuread:
   # Optional custom OAuth 2.0 scope to request when acquiring tokens.
   # If not specified, defaults to the appropriate monitoring scope for the cloud:
   # - AzurePublic: https://monitor.azure.com//.default
-  # - AzureGovernment: https://monitor.azure.us//.default  
+  # - AzureGovernment: https://monitor.azure.us//.default
   # - AzureChina: https://monitor.azure.cn//.default
   # Use this to authenticate against custom Azure applications or non-standard endpoints.
   [ scope: <string> ]
